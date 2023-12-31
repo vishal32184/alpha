@@ -1,0 +1,84 @@
+import java.io.*;
+
+class User {
+    private String username, password;
+    private double balance;
+
+    User(String username, String password, double balance) {
+        this.username = username;
+        this.password = password;
+        this.balance = balance;
+        saveToFile();
+    }
+
+    boolean authenticate(String password) {
+        return this.password.equals(password);
+    }
+
+    void deposit(double amount) {
+        balance += amount;
+        saveToFile();
+    }
+
+    boolean withdraw(double amount) {
+        if (amount <= balance) {
+            balance -= amount;
+            saveToFile();
+            return true;
+        }
+        return false;
+    }
+
+    double getBalance() {
+        return balance;
+    }
+
+    private void saveToFile() {
+        try (PrintWriter writer = new PrintWriter(username + ".txt")) {
+            writer.println(username + "," + password + "," + balance);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static User loadFromFile(String username) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(username + ".txt"))) {
+            String[] userData = reader.readLine().split(",");
+            return new User(userData[0], userData[1], Double.parseDouble(userData[2]));
+        } catch (IOException | NullPointerException | ArrayIndexOutOfBoundsException e) {
+            return null;
+        }
+    }
+}
+
+class Bank {
+    static void registerUser(String username, String password, double initialBalance) {
+        new User(username, password, initialBalance);
+    }
+
+    static User loginUser(String username, String password) {
+        User user = User.loadFromFile(username);
+        return (user != null && user.authenticate(password)) ? user : null;
+    }
+}
+
+public class OnlineBankingSystem {
+    public static void main(String[] args) {
+        Bank.registerUser("user1", "pass123", 1000.0);
+        User loggedInUser = Bank.loginUser("user1", "pass123");
+
+        if (loggedInUser != null) {
+            System.out.println("Logged in as: " + loggedInUser.getBalance());
+            loggedInUser.deposit(200.0);
+            System.out.println("New Balance after deposit: " + loggedInUser.getBalance());
+
+            if (loggedInUser.withdraw(150.0)) {
+                System.out.println("New Balance after withdrawal: " + loggedInUser.getBalance());
+            } else {
+                System.out.println("Insufficient funds for withdrawal.");
+            }
+        } else {
+            System.out.println("Login failed.");
+        }
+    }
+}
